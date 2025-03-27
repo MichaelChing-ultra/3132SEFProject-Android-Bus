@@ -64,16 +64,19 @@
     let currentLanguage = 'en'; // Default language
     const storedRoutes = JSON.parse(localStorage.getItem('storedRoutes')) || [];
 
-    async function fetchRoutes() {
+    async function query(param) {
         try {
             const routes = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/')).json()).data;
             const stops = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop')).json()).data;
             const Pkey = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop')).json()).data;
+
             const routeList = document.getElementById('routeList');
             routeList.innerHTML = ''; // Clear previous routes
             
-            for (const route of routes) {
-                // Create a list for stops
+            // Filter routes based on exact match with the search parameter
+            const filteredRoutes = routes.filter(route => route.route === param);
+
+            for (const route of filteredRoutes) {
                 const stopList = document.createElement('ul');
                 stopList.className = 'stop-list';
 
@@ -93,7 +96,6 @@
                     }
                 }));
 
-                // Route information
                 const routeItem = document.createElement('li');
                 routeItem.className = 'route-item';
                 routeItem.innerHTML = `
@@ -115,6 +117,13 @@
                 routeItem.querySelector('details').appendChild(stopList);
                 routeList.appendChild(routeItem);
             }
+
+            // If no routes are found, display a message
+            if (filteredRoutes.length === 0) {
+                const noResultsItem = document.createElement('li');
+                noResultsItem.innerText = currentLanguage === 'tc' ? '未找到相關路線' : 'No related routes found';
+                routeList.appendChild(noResultsItem);
+            }
         } catch (error) {
             console.error('Error fetching the bus routes:', error);
         }
@@ -122,12 +131,9 @@
 
     async function setLanguage(language) {
         currentLanguage = language;
-        if (language === 'tc') {
-            document.getElementById('appTitle').innerText = '巴士路線資料';
-        } else {
-            document.getElementById('appTitle').innerText = 'Bus Route Information';
-        }
-        fetchRoutes(); // Re-fetch routes to display in the selected language
+        document.getElementById('appTitle').innerText = language === 'tc' ? '尋找巴士路線' : 'Search Bus Route';
+        const params = document.getElementById('searchBar').value.trim();
+        query(params); // Re-fetch routes to display in the selected language
     }
 
     async function toggleDarkMode() {
@@ -146,6 +152,11 @@
         }
     }
 
+    function search() {
+        const params = document.getElementById('searchBar').value.trim();
+        query(params); // Pass the search input directly
+    }
+
 </script>
 <body>
     <div class="bar">
@@ -158,8 +169,10 @@
         <button onclick="setLanguage('tc')">中文</button>
         <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
     </div>
+    <div>
+        <input type="text" id="searchBar" onkeyup="search()" placeholder="Search..">
+    </div>
     <h1 id="appTitle">Bus Route Information</h1>
     <ul id="routeList" class="route-list"></ul>
-    <script>fetchRoutes();</script>
 </body>
 </html>

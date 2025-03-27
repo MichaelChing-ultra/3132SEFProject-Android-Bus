@@ -34,14 +34,7 @@
         body.dark .route-item {
             background: #444;
         }
-        .route-item h2 {
-            margin: 0;
-            font-size: 1.5em;
-        }
-        .route-item p {
-            margin: 5px 0;
-        }
-        .bar, .mode-toggle {
+        .bar {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -64,21 +57,30 @@
     let currentLanguage = 'en'; // Default language
     const storedRoutes = JSON.parse(localStorage.getItem('storedRoutes')) || [];
 
-    async function fetchRoutes() {
-        try {
-            const routes = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/')).json()).data;
-            const stops = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop')).json()).data;
-            const Pkey = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop')).json()).data;
-            const routeList = document.getElementById('routeList');
-            routeList.innerHTML = ''; // Clear previous routes
-            
-            for (const route of routes) {
-                // Create a list for stops
+    async function displayStoredRoutes() {
+        const routes = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/')).json()).data;
+        const stops = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop')).json()).data;
+        const Pkey = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop')).json()).data;
+
+        const routeList = document.getElementById('routeList');
+        routeList.innerHTML = ''; // Clear previous routes
+
+        // if localStorage is emtry
+        if (storedRoutes.length === 0) {
+            const noResultsItem = document.createElement('li');
+            noResultsItem.innerText = currentLanguage === 'tc' ? '未找到儲存的路線' : 'No stored routes found';
+            routeList.appendChild(noResultsItem);
+            return;
+        }
+
+        const filteredRoutes = routes.filter(route => storedRoutes.includes(route.route)).filter(route => storedRoutes.includes(route.bound));
+
+        for (const route of filteredRoutes) {
                 const stopList = document.createElement('ul');
                 stopList.className = 'stop-list';
 
                 const routeStops = Pkey.filter(p => p.route === route.route && p.bound === route.bound);
-                await Promise.all(routeStops.map(async (routeStop, index) => {
+                Promise.all(routeStops.map(async (routeStop, index) => {
                     const stopInfo = stops.find(s => s.stop === routeStop.stop);
                     const etas = await (await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${routeStop.stop}/${route.route}/1`)).json();
                     const etaText = etas.data
@@ -93,7 +95,6 @@
                     }
                 }));
 
-                // Route information
                 const routeItem = document.createElement('li');
                 routeItem.className = 'route-item';
                 routeItem.innerHTML = `
@@ -107,45 +108,38 @@
 
                 // stored button
                 const storeButton = document.createElement('button');
-                storeButton.innerText = 'Store';
-                storeButton.onclick = () => storeRoute(route.route, route.bound);
+                storeButton.innerText = 'Delete';
+                storeButton.onclick = () => removeRoute(route.route);
                 routeList.appendChild(storeButton);
                 
                 // Route stops information
                 routeItem.querySelector('details').appendChild(stopList);
                 routeList.appendChild(routeItem);
-            }
-        } catch (error) {
-            console.error('Error fetching the bus routes:', error);
         }
     }
 
-    async function setLanguage(language) {
-        currentLanguage = language;
-        if (language === 'tc') {
-            document.getElementById('appTitle').innerText = '巴士路線資料';
-        } else {
-            document.getElementById('appTitle').innerText = 'Bus Route Information';
+
+    function removeRoute(route) {
+        const index = storedRoutes.indexOf(route);
+        if (index > -1) {
+            storedRoutes.splice(index, 1);
+            localStorage.setItem('storedRoutes', JSON.stringify(storedRoutes));
+            displayStoredRoutes(); // Refresh the displayed routes
+            alert(`Route ${route} removed successfully!`);
         }
-        fetchRoutes(); // Re-fetch routes to display in the selected language
     }
 
-    async function toggleDarkMode() {
+    function toggleDarkMode() {
         document.body.classList.toggle('dark');
     }
 
-    function storeRoute(route,bound) {
-        if (!storedRoutes.includes(route)) {
-            storedRoutes.push(route,bound);
-
-            // Stored to the storedRoutes file
-            localStorage.setItem('storedRoutes', JSON.stringify(storedRoutes));
-            alert(`Route ${route} stored successfully!`);
-        } else {
-            alert(`Route ${route} is already stored.`);
-        }
+    function setLanguage(language) {
+        currentLanguage = language;
+        document.getElementById('appTitle').innerText = language === 'tc' ? '儲存的路線' : 'Stored Routes';
+        displayStoredRoutes(); // Refresh displayed routes in the selected language
     }
 
+    window.onload = displayStoredRoutes; // Load stored routes on page load
 </script>
 <body>
     <div class="bar">
@@ -158,8 +152,7 @@
         <button onclick="setLanguage('tc')">中文</button>
         <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
     </div>
-    <h1 id="appTitle">Bus Route Information</h1>
+    <h1 id="appTitle">Stored Routes</h1>
     <ul id="routeList" class="route-list"></ul>
-    <script>fetchRoutes();</script>
 </body>
 </html>

@@ -62,13 +62,13 @@
 </head>
 <script>
     let currentLanguage = 'en'; // Default language
-    const storedRoutes = JSON.parse(localStorage.getItem('storedRoutes')) || [];
 
     async function fetchRoutes() {
         try {
             const routes = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/')).json()).data;
             const stops = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop')).json()).data;
             const Pkey = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop')).json()).data;
+
             const routeList = document.getElementById('routeList');
             routeList.innerHTML = ''; // Clear previous routes
             
@@ -93,7 +93,6 @@
                     }
                 }));
 
-                // Route information
                 const routeItem = document.createElement('li');
                 routeItem.className = 'route-item';
                 routeItem.innerHTML = `
@@ -105,13 +104,6 @@
                     </details>
                 `;
 
-                // stored button
-                const storeButton = document.createElement('button');
-                storeButton.innerText = 'Store';
-                storeButton.onclick = () => storeRoute(route.route, route.bound);
-                routeList.appendChild(storeButton);
-                
-                // Route stops information
                 routeItem.querySelector('details').appendChild(stopList);
                 routeList.appendChild(routeItem);
             }
@@ -134,17 +126,7 @@
         document.body.classList.toggle('dark');
     }
 
-    function storeRoute(route,bound) {
-        if (!storedRoutes.includes(route)) {
-            storedRoutes.push(route,bound);
 
-            // Stored to the storedRoutes file
-            localStorage.setItem('storedRoutes', JSON.stringify(storedRoutes));
-            alert(`Route ${route} stored successfully!`);
-        } else {
-            alert(`Route ${route} is already stored.`);
-        }
-    }
 
 </script>
 <body>
