@@ -4,162 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transportation App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        body.dark {
-            background-color: #333;
-            color: #f4f4f4;
-        }
-        h1 {
-            text-align: center;
-        }
-        .route-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .route-item {
-            background: white;
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s, color 0.3s;
-        }
-        body.dark .route-item {
-            background: #444;
-        }
-        .route-item h2 {
-            margin: 0;
-            font-size: 1.5em;
-        }
-        .route-item p {
-            margin: 5px 0;
-        }
-        .bar, .mode-toggle {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        button {
-            margin: 0 5px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <script>
     let currentLanguage = 'en'; // Default language
-    const storedRoutes = JSON.parse(localStorage.getItem('storedRoutes')) || [];
+    const storedRoutes = new Set(JSON.parse(localStorage.getItem('storedRoutes')) || []);
+    let routes = [], stops = [], Pkey = [];
+
+    async function fetchData() {
+        const [routesData, stopsData, pkeyData] = await Promise.all([
+            fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/').then(res => res.json()),
+            fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop').then(res => res.json()),
+            fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop').then(res => res.json())
+        ]);
+        routes = routesData.data;
+        stops = stopsData.data;
+        Pkey = pkeyData.data;
+        fetchRoutes();
+    }
 
     async function fetchRoutes() {
-        try {
-            const routes = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/')).json()).data;
-            const stops = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/stop')).json()).data;
-            const Pkey = (await (await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-stop')).json()).data;
-            const routeList = document.getElementById('routeList');
-            routeList.innerHTML = ''; // Clear previous routes
+        const routeList = document.getElementById('routeList');
+        routeList.innerHTML = ''; // Clear previous routes
+
+        for (const route of routes) {
+            const routeStops = Pkey.filter(p => p.route === route.route && p.bound === route.bound);
             
-            for (const route of routes) {
-                // Create a list for stops
-                const stopList = document.createElement('ul');
-                stopList.className = 'stop-list';
+            // Ensure sequence is a number before sorting
+            routeStops.sort((a, b) => {
+                const seqA = Number(a.sequence);
+                const seqB = Number(b.sequence);
+                return seqA - seqB;
+            });
 
-                const routeStops = Pkey.filter(p => p.route === route.route && p.bound === route.bound);
-                await Promise.all(routeStops.map(async (routeStop, index) => {
-                    const stopInfo = stops.find(s => s.stop === routeStop.stop);
-                    const etas = await (await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${routeStop.stop}/${route.route}/1`)).json();
-                    const etaText = etas.data
-                        .filter(eta => eta.dir === route.bound)
-                        .map(eta => new Date(eta.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-                        .join(', ');
+            const stopList = document.createElement('ul');
+            stopList.className = 'stop-list';
+            
+            // Fetch all stop ETA data before sorting and displaying
+            const stopItems = await Promise.all(routeStops.map(async (routeStop, index) => {
+                const stopInfo = stops.find(s => s.stop === routeStop.stop);
+                const etas = await (await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${routeStop.stop}/${route.route}/1`)).json();
+                const etaText = etas.data
+                    .filter(eta => eta.dir === route.bound)
+                    .map(eta => {
+                        const remainingTime = Math.max(0, Math.floor((new Date(eta.eta) - new Date()) / 1000)); // Remaining time in seconds
+                        return `${Math.floor(remainingTime / 60)} min`;
+                    })
+                    .join(', ');
 
-                    if (stopInfo) {
-                        const stopItem = document.createElement('li');
-                        stopItem.innerText = `${index + 1}: ${currentLanguage === 'tc' ? stopInfo.name_tc : stopInfo.name_en} ${etaText}`;
-                        stopList.appendChild(stopItem);
-                    }
-                }));
+                if (stopInfo) {
+                    return `${index + 1}: ${currentLanguage === 'tc' ? stopInfo.name_tc : stopInfo.name_en} ${etaText}`;
+                }
+                return null;
+            }));
 
-                // Route information
-                const routeItem = document.createElement('li');
-                routeItem.className = 'route-item';
-                routeItem.innerHTML = `
-                    <details>
-                        <summary>
-                            <h2>${currentLanguage === 'tc' ? '路線: ' : 'Route: '} ${route.route}</h2>
-                            <h3>${currentLanguage === 'tc' ? route.orig_tc : route.orig_en} ${currentLanguage === 'tc' ? ' 往 ' : '  to '} ${currentLanguage === 'tc' ? route.dest_tc : route.dest_en}</h3>
-                        </summary>
-                    </details>
-                `;
+            // Filter out null values and sort stopItems
+            const validStopItems = stopItems.filter(item => item !== null);
+            
+            // Append sorted stops to the list
+            validStopItems.forEach(item => {
+                const stopItem = document.createElement('li');
+                stopItem.innerText = item;
+                stopList.appendChild(stopItem);
+            });
 
-                // stored button
-                const storeButton = document.createElement('button');
-                storeButton.innerText = 'Store';
-                storeButton.onclick = () => storeRoute(route.route, route.bound);
-                routeList.appendChild(storeButton);
-                
-                // Route stops information
-                routeItem.querySelector('details').appendChild(stopList);
-                routeList.appendChild(routeItem);
-            }
-        } catch (error) {
-            console.error('Error fetching the bus routes:', error);
+            const routeItem = document.createElement('li');
+            routeItem.className = 'route-item';
+            routeItem.innerHTML = `
+                <details>
+                    <summary>
+                        <h2>${currentLanguage === 'tc' ? '路線: ' : 'Route: '} ${route.route}</h2>
+                        <h3>${currentLanguage === 'tc' ? route.orig_tc : route.orig_en} ${currentLanguage === 'tc' ? ' 往 ' : '  to '} ${currentLanguage === 'tc' ? route.dest_tc : route.dest_en}</h3>
+                    </summary>
+                </details>
+            `;
+
+            createButtons(route, routeItem);
+            routeItem.querySelector('details').appendChild(stopList);
+            routeList.appendChild(routeItem);
         }
     }
 
-    async function setLanguage(language) {
-        currentLanguage = language;
-        if (language === 'tc') {
-            document.getElementById('appTitle').innerText = '巴士路線資料';
-        } else {
-            document.getElementById('appTitle').innerText = 'Bus Route Information';
+    function createButtons(route, routeItem) {
+            const routeList = document.getElementById('routeList');
+    
+            const storeButton = document.createElement('button');
+            storeButton.innerText = currentLanguage === 'tc' ? '儲存' : 'Save';
+            storeButton.onclick = () => storeRoute(route.route, route.bound);
+            routeList.appendChild(storeButton);
+    
+            const mapButton = document.createElement('button');
+            mapButton.innerText = currentLanguage === 'tc' ? '在地圖上顯示' : 'Show on Map';
+            mapButton.onclick = () => {
+                window.location.href = `map.html?route=${encodeURIComponent(route.route)}&bound=${encodeURIComponent(route.bound)}`;
+            };
+            routeList.appendChild(mapButton);
         }
+
+    function setLanguage(language) {
+        currentLanguage = language;
+        document.getElementById('appTitle').innerText = language === 'tc' ? '尋找巴士路線' : 'Bus Route Information';
+        document.getElementById('index-button').innerText = language === 'tc' ? '首頁' : 'Homepage';
+        document.getElementById('search-button').innerText = language === 'tc' ? '尋找' : 'Search';
+        document.getElementById('stored-button').innerText = language === 'tc' ? '儲存' : 'Stored Routes';
+        document.getElementById('dark-button').innerText = language === 'tc' ? '切換黑暗模式' : 'Toggle Dark Mode';
         fetchRoutes(); // Re-fetch routes to display in the selected language
     }
 
-    async function toggleDarkMode() {
+    function toggleDarkMode() {
         document.body.classList.toggle('dark');
     }
 
-    function storeRoute(route,bound) {
-        if (!storedRoutes.includes(route)) {
-            storedRoutes.push(route,bound);
-
-            // Stored to the storedRoutes file
-            localStorage.setItem('storedRoutes', JSON.stringify(storedRoutes));
+    function storeRoute(route, bound) {
+        const routeBound = `${route}-${bound}`; // Combine route and bound
+        if (!storedRoutes.has(routeBound)) {
+            storedRoutes.add(routeBound);
+            localStorage.setItem('storedRoutes', JSON.stringify(Array.from(storedRoutes)));
             alert(`Route ${route} stored successfully!`);
         } else {
             alert(`Route ${route} is already stored.`);
         }
     }
 
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+        document.querySelector('.bar').addEventListener('click', (event) => {
+            if (event.target.matches('.store-button')) {
+                const routeBound = event.target.dataset.route; // Store route from button data
+                const [route, bound] = routeBound.split('-');
+                storeRoute(route, bound);
+            } else if (event.target.matches('.map-button')) {
+                const routeInfo = event.target.dataset.route; // Get route from button data
+                window.location.href = `map.html?route=${encodeURIComponent(routeInfo.split('-')[0])}&bound=${encodeURIComponent(routeInfo.split('-')[1])}`;
+            }
+        });
+    });
 </script>
 <body>
     <div class="bar">
-        <a href="index.html" class="search-button">Home</a>
-        <a href="search.html" class="search-button">Search</a>
-        <a href="stored.html" class="stored-button">Stored</a>
+        <a href="index.html" id="index-button" class="search-button">Home</a>
+        <a href="search.html" id="search-button" class="search-button">Search</a>
+        <a href="stored.html" id="stored-button" class="stored-button">Stored</a>
     </div>
     <div class="bar">
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('tc')">中文</button>
-        <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        <button onclick="toggleDarkMode()" id="dark-button">Toggle Dark Mode</button>
     </div>
     <h1 id="appTitle">Bus Route Information</h1>
     <ul id="routeList" class="route-list"></ul>
-    <script>fetchRoutes();</script>
 </body>
 </html>

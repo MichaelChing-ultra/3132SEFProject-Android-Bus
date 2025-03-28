@@ -4,54 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transportation App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        body.dark {
-            background-color: #333;
-            color: #f4f4f4;
-        }
-        h1 {
-            text-align: center;
-        }
-        .route-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .route-item {
-            background: white;
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s, color 0.3s;
-        }
-        body.dark .route-item {
-            background: #444;
-        }
-        .bar {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        button {
-            margin: 0 5px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <script>
     let currentLanguage = 'en'; // Default language
@@ -65,7 +18,6 @@
         const routeList = document.getElementById('routeList');
         routeList.innerHTML = ''; // Clear previous routes
 
-        // if localStorage is emtry
         if (storedRoutes.length === 0) {
             const noResultsItem = document.createElement('li');
             noResultsItem.innerText = currentLanguage === 'tc' ? '未找到儲存的路線' : 'No stored routes found';
@@ -73,19 +25,28 @@
             return;
         }
 
-        const filteredRoutes = routes.filter(route => storedRoutes.includes(route.route)).filter(route => storedRoutes.includes(route.bound));
+        for (const routeBound of storedRoutes) {
+            const [route, bound] = routeBound.split('-'); // Split the stored combination
+            const filteredRoutes = routes.filter(r => r.route === route && r.bound === bound);
 
-        for (const route of filteredRoutes) {
+            for (const route of filteredRoutes) {
                 const stopList = document.createElement('ul');
                 stopList.className = 'stop-list';
 
                 const routeStops = Pkey.filter(p => p.route === route.route && p.bound === route.bound);
-                Promise.all(routeStops.map(async (routeStop, index) => {
+                routeStops.sort((a, b) => a.sequence - b.sequence); // Sort by sequence
+
+                await Promise.all(routeStops.map(async (routeStop, index) => {
                     const stopInfo = stops.find(s => s.stop === routeStop.stop);
                     const etas = await (await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${routeStop.stop}/${route.route}/1`)).json();
                     const etaText = etas.data
                         .filter(eta => eta.dir === route.bound)
-                        .map(eta => new Date(eta.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+                        .map(eta => {
+                            const etaDate = new Date(eta.eta);
+                            const remainingTime = Math.max(0, Math.floor((etaDate - new Date()) / 1000)); // Remaining time in seconds
+                            const minutes = Math.floor(remainingTime / 60);
+                            return `${minutes} min`;
+                        })
                         .join(', ');
 
                     if (stopInfo) {
@@ -106,18 +67,24 @@
                     </details>
                 `;
 
-                // stored button
+                // Add delete and map buttons as needed
                 const storeButton = document.createElement('button');
-                storeButton.innerText = 'Delete';
-                storeButton.onclick = () => removeRoute(route.route);
+                storeButton.innerText = `${currentLanguage === 'tc' ? '刪除' : 'Delete'}`;
+                storeButton.onclick = () => removeRoute(routeBound);
                 routeList.appendChild(storeButton);
-                
-                // Route stops information
+
+                const mapButton = document.createElement('button');
+                mapButton.innerText = `${currentLanguage === 'tc' ? '在地圖上顯示' : 'Show on Map'}`;
+                mapButton.onclick = () => {
+                    window.location.href = `map.html?route=${encodeURIComponent(route.route)}&bound=${encodeURIComponent(route.bound)}`;
+                };
+                routeList.appendChild(mapButton);
+
                 routeItem.querySelector('details').appendChild(stopList);
                 routeList.appendChild(routeItem);
+            }
         }
     }
-
 
     function removeRoute(route) {
         const index = storedRoutes.indexOf(route);
@@ -136,6 +103,10 @@
     function setLanguage(language) {
         currentLanguage = language;
         document.getElementById('appTitle').innerText = language === 'tc' ? '儲存的路線' : 'Stored Routes';
+        document.getElementById('index-button').innerText = language === 'tc' ? '首頁' : 'Homepage';
+        document.getElementById('search-button').innerText = language === 'tc' ? '尋找' : 'Search';
+        document.getElementById('stored-button').innerText = language === 'tc' ? '儲存' : 'Stored Routes';
+        document.getElementById('dark-button').innerText = language === 'tc' ? '切換黑暗模式' : 'Toggle Dark Mode';
         displayStoredRoutes(); // Refresh displayed routes in the selected language
     }
 
@@ -143,14 +114,14 @@
 </script>
 <body>
     <div class="bar">
-        <a href="index.html" class="search-button">Home</a>
-        <a href="search.html" class="search-button">Search</a>
-        <a href="stored.html" class="stored-button">Stored</a>
+        <a href="index.html" id="index-button" class="search-button">Home</a>
+        <a href="search.html" id="search-button" class="search-button">Search</a>
+        <a href="stored.html" id="stored-button" class="stored-button">Stored Routes</a>
     </div>
     <div class="bar">
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('tc')">中文</button>
-        <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        <button onclick="toggleDarkMode()" id="dark-button">Toggle Dark Mode</button>
     </div>
     <h1 id="appTitle">Stored Routes</h1>
     <ul id="routeList" class="route-list"></ul>
