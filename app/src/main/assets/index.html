@@ -29,7 +29,7 @@
 
         for (const route of routes) {
             const routeStops = Pkey.filter(p => p.route === route.route && p.bound === route.bound);
-            
+
             // Ensure sequence is a number before sorting
             routeStops.sort((a, b) => {
                 const seqA = Number(a.sequence);
@@ -39,7 +39,7 @@
 
             const stopList = document.createElement('ul');
             stopList.className = 'stop-list';
-            
+
             // Fetch all stop ETA data before sorting and displaying
             const stopItems = await Promise.all(routeStops.map(async (routeStop, index) => {
                 const stopInfo = stops.find(s => s.stop === routeStop.stop);
@@ -60,7 +60,7 @@
 
             // Filter out null values and sort stopItems
             const validStopItems = stopItems.filter(item => item !== null);
-            
+
             // Append sorted stops to the list
             validStopItems.forEach(item => {
                 const stopItem = document.createElement('li');
