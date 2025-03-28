@@ -1,0 +1,57 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    transition: background-color 0.3s, color 0.3s;
+}
+body.dark {
+    background-color: #333;
+    color: #f4f4f4;
+}
+h1 {
+    text-align: center;
+}
+.route-list {
+    list-style-type: none;
+    padding: 0;
+}
+.route-item {
+    background: white;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, color 0.3s;
+}
+body.dark .route-item {
+    background: #444;
+}
+.route-item h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+.route-item p {
+    margin: 5px 0;
+}
+.bar, .mode-toggle {
+    text-align: center;
+    margin-bottom: 20px;
+}
+button {
+    margin: 0 5px;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.3s;
+}
+button:hover {
+    background-color: #0056b3;
+}
+map {
+    height: 500px;
+    width: 100%;
+}
