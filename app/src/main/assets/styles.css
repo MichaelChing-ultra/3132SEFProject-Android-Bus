@@ -19,6 +19,7 @@ h1 {
 .route-item {
     background: white;
     margin: 10px 0;
+    margin-bottom: 20px;
     padding: 15px;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -54,4 +55,16 @@ button:hover {
 map {
     height: 500px;
     width: 100%;
+}
+div > a {
+    border: 1px black solid;
+    padding: 6px;
+    color: black;
+}
+body.dark div > a {
+    color: white;
+    border: 1px white solid;
+}
+ul.stop-list > li {
+    margin: 5px;
 }
