@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map {
-            height: 100vh;
+            height: 90vh;
         }
         .stop-marker {
             background-color: red;
@@ -19,8 +19,13 @@
             margin: -5px 0 0 -5px;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons"
+    rel="stylesheet">
 </head>
 <body>
+    <div style="display: flex; padding: 10px;"> 
+    <button><a href="index.html" id="index-button" class="search-button"></a></button> 
+    </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>

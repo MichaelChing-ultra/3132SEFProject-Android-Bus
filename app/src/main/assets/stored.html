@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transportation App</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <script>
     let currentLanguage = 'en'; // Default language
@@ -103,27 +104,46 @@
     function setLanguage(language) {
         currentLanguage = language;
         document.getElementById('appTitle').innerText = language === 'tc' ? '儲存的路線' : 'Stored Routes';
-        document.getElementById('index-button').innerText = language === 'tc' ? '首頁' : 'Homepage';
-        document.getElementById('search-button').innerText = language === 'tc' ? '尋找' : 'Search';
-        document.getElementById('stored-button').innerText = language === 'tc' ? '儲存' : 'Stored Routes';
+        //document.getElementById('index-button').innerText = language === 'tc' ? '首頁' : 'Homepage';
+        document.getElementById('search-text').innerText = language === 'tc' ? '尋找' : 'Search';
+        document.getElementById('stored-text').innerText = language === 'tc' ? '儲存' : 'Stored Routes';
         document.getElementById('dark-button').innerText = language === 'tc' ? '切換黑暗模式' : 'Toggle Dark Mode';
         displayStoredRoutes(); // Refresh displayed routes in the selected language
     }
 
+
+    function openNav() {
+        document.getElementById("setting").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("setting").style.width = "0";
+    }
+    
     window.onload = displayStoredRoutes; // Load stored routes on page load
 </script>
 <body>
-    <div class="bar">
-        <a href="index.html" id="index-button" class="search-button">Home</a>
-        <a href="search.html" id="search-button" class="search-button">Search</a>
-        <a href="stored.html" id="stored-button" class="stored-button">Stored Routes</a>
+    <h3 id="appTitle">Stored Routes</h3>
+    <div class="bigbar">
+        
+        <div id="topnav">
+            <a class="bar-item" href="index.html" id="index-button"><i class="fa fa-fw fa-home"></i></a>
+            <a class="bar-item" href="search.html" id="search-button" ><i class="fa fa-fw fa-search"></i><span id="search-text">Search</span></a>
+            <a class="bar-item" href="stored.html" id="stored-button"><i class="fa fa-fw fa-bookmark"></i><span id="stored-text">Stored Routes</span></a>
+        </div>
+        
+        
+        <a id="sidenav" class="bar-item" onclick="openNav()">&#9776;</a>
+        
+        <div id="setting">
+       
+            <span class="subtitle">Setting</span>
+            <span class="closebtn" onclick="closeNav()">&times;</span>
+            <p onclick="setLanguage('en')" class="right-button">English</p>
+            <p onclick="setLanguage('tc')" class="right-button">中文</p>
+            <p onclick="toggleDarkMode()" id="dark-button" class="right-button">Dark Mode</p>
+        </div>
     </div>
-    <div class="bar">
-        <button onclick="setLanguage('en')">English</button>
-        <button onclick="setLanguage('tc')">中文</button>
-        <button onclick="toggleDarkMode()" id="dark-button">Toggle Dark Mode</button>
-    </div>
-    <h1 id="appTitle">Stored Routes</h1>
     <ul id="routeList" class="route-list"></ul>
 </body>
 </html>

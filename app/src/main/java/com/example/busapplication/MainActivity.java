@@ -41,4 +41,16 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDefaultTextEncodingName("utf-8");
         webSettings.setAllowFileAccess(true);
     }
+
+    function setLanguage(language) {
+  currentLanguage = language;
+
+  document.getElementById('appTitle').textContent = language === 'tc' ? '翠綠巴士路線資料' : 'Bus Route Information';
+  document.getElementById('index-text').textContent = language === 'tc' ? '首頁' : 'Homepage';
+  document.getElementById('search-text').textContent = language === 'tc' ? '搜尋' : 'Search';
+  document.getElementById('stored-text').textContent = language === 'tc' ? '儲存路線' : 'Stored Routes';
+  document.getElementById('dark-button').textContent = language === 'tc' ? '切換深色模式' : 'Toggle Dark Mode';
+
+  fetchRoutes();
+    }
 }

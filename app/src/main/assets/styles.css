@@ -4,67 +4,76 @@ body {
     padding: 20px;
     background-color: #f4f4f4;
     transition: background-color 0.3s, color 0.3s;
+    font-size: 15px;
 }
+
 body.dark {
     background-color: #333;
     color: #f4f4f4;
 }
-h1 {
-    text-align: center;
-}
-.route-list {
-    list-style-type: none;
-    padding: 0;
-}
-.route-item {
-    background: white;
-    margin: 10px 0;
-    margin-bottom: 20px;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s, color 0.3s;
-}
-body.dark .route-item {
-    background: #444;
-}
-.route-item h2 {
-    margin: 0;
-    font-size: 1.5em;
-}
-.route-item p {
-    margin: 5px 0;
-}
-.bar, .mode-toggle {
-    text-align: center;
-    margin-bottom: 20px;
-}
-button {
-    margin: 0 5px;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: white;
-    transition: background-color 0.3s;
-}
-button:hover {
-    background-color: #0056b3;
-}
-map {
-    height: 500px;
+
+.bigbar {
+    display: flex;
+    background-color: white;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
+    line-height: 100%;
 }
-div > a {
-    border: 1px black solid;
-    padding: 6px;
-    color: black;
+
+#topnav a {
+  display: inline-block;
+  float: left;
+  color: black;
+  text-align: center;
 }
-body.dark div > a {
-    color: white;
-    border: 1px white solid;
+
+.bar-item {
+  padding: 10px;
+  
 }
-ul.stop-list > li {
-    margin: 5px;
+
+.bar-item:hover {
+  background-color: lightblue;
+}
+
+#sidenav {
+  cursor:pointer;
+}
+
+.closebtn {
+  position: absolute;
+  top: 0.25;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+#setting .subtitle{
+  padding-left: 10px;
+    font-size: 20px;
+}
+
+#setting {
+  height: 100%; /* 100% Full-height */
+  width: 0; /* 0 width - change this with JavaScript */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Stay on top */
+  top: 0; /* Stay at the top */
+  right: 0;
+  background-color: #111; /* Black*/
+  overflow-x: hidden; /* Disable horizontal scroll */
+  padding-top: 60px; /* Place content 60px from the top */
+  transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
+  color: #818181;
+}
+
+
+#setting p {
+  padding: 8px 8px 8px 32px;
+}
+
+#setting p:hover {
+    color: #f1f1f1;
+    cursor:pointer;
 }
